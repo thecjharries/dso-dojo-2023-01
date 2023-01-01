@@ -14,5 +14,5 @@ fn index() -> &'static str {
 
 #[launch]
 fn rocket() -> _ {
-    build().mount("/", routes![index])
+    build().mount("/", routes![index]).manage(redis_pool())
 }

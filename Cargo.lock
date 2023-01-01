@@ -255,6 +255,7 @@ dependencies = [
 name = "dso-dojo-2023-01"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
  "r2d2_redis",
  "rocket",
 ]

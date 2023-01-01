@@ -1,14 +1,11 @@
-use redis::{Client, Commands, Connection, RedisResult};
+use rocket::{build, get, launch, routes};
 
-fn main() {
-    test_redis().unwrap();
+#[get("/")]
+fn index() -> &'static str {
+    "Hello, world!"
 }
 
-fn test_redis() -> RedisResult<()> {
-    let client = Client::open("redis://127.0.0.1/")?;
-    let mut connection: Connection = client.get_connection()?;
-    connection.set("foo", "bar")?;
-    let value: String = connection.get("foo")?;
-    println!("value: {}", value);
-    Ok(())
+#[launch]
+fn rocket() -> _ {
+    build().mount("/", routes![index])
 }

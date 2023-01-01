@@ -1,0 +1,34 @@
+name: Test
+
+on:
+  - push
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Cache cargo deps
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Start redis
+        run: make redis
+
+      - name: Test the server
+        run: cargo test --verbose
+
+      - name: Stop redis
+        if: always()
+        run: docker stop redis

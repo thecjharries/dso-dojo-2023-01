@@ -258,6 +258,7 @@ dependencies = [
  "lazy_static",
  "r2d2_redis",
  "rocket",
+ "serde",
 ]
 
 [[package]]

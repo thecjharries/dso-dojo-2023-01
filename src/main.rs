@@ -6,6 +6,7 @@ use rocket::http::Status;
 use rocket::outcome::try_outcome;
 use rocket::request::{self, FromRequest, Request};
 use rocket::{async_trait, build, get, launch, routes, State};
+use serde::{Deserialize, Serialize};
 use std::env::var;
 use std::ops::{Deref, DerefMut};
 
@@ -47,6 +48,12 @@ impl DerefMut for RedisConnection {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug)]
+struct ApiResponse {
+    id: u64,
+    token: String,
 }
 
 #[get("/api/<id>")]

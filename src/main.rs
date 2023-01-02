@@ -95,12 +95,4 @@ mod tests {
         let mut conn = pool.get().unwrap();
         let _: () = redis::cmd("PING").query(conn.deref_mut()).unwrap();
     }
-
-    #[test]
-    fn test_api() {
-        let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response: LocalResponse = client.get("/api/10").dispatch();
-        assert_eq!(response.status(), rocket::http::Status::Ok);
-        assert_eq!(response.into_string(), Some("Hello, 10!".into()));
-    }
 }

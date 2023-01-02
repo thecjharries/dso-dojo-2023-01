@@ -4,6 +4,9 @@ services:
     image: thecjharries/dso-dojo-2023-01-reverseproxy
     ports:
       - "80:80"
+    depends_on:
+      - dso_dojo_slow_postgres
+      - cacheserver
     networks:
       network:
         ipv4_address: 10.0.0.1
@@ -26,6 +29,8 @@ services:
       API_WAIT_SECONDS: 0
     ports:
       - "8000:8000"
+    depends_on:
+      - postgres
     networks:
       network:
         ipv4_address: 10.0.0.3
@@ -37,6 +42,10 @@ services:
       API_ROOT: "http://10.0.0.3:8000"
     ports:
       - "8001:8001"
+    depends_on:
+      - dso_dojo_slow_postgres
+      - redis
+    restart: always
     networks:
       network:
         ipv4_address: 10.0.0.4

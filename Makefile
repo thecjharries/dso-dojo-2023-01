@@ -7,9 +7,16 @@ all:
 redis:
 	docker run --rm --detach --publish 6379:6379 --name redis redis
 
+.PHONY: nginx
+nginx:
+	docker build --tag thecjharries/dso-dojo-2023-01-reverseproxy:latest --file ./Dockerfiles/nginx.Dockerfile .
+
+.PHONY: cache-server
+cache-server:
+	docker build --tag thecjharries/dso-dojo-2023-01-cacheserver:latest --file ./Dockerfiles/cache-server.Dockerfile .
+
 .PHONY: dependencies
-dependencies:
-	cd Dockerfiles && $(MAKE) all
+dependencies: nginx cache-server
 
 .PHONY: stack
 stack: dependencies

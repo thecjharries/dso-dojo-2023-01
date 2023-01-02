@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 use r2d2_redis::r2d2::{Pool, PooledConnection};
+use r2d2_redis::redis::Commands;
 use r2d2_redis::RedisConnectionManager;
 use rocket::http::Status;
 use rocket::outcome::try_outcome;
@@ -49,8 +50,13 @@ impl DerefMut for RedisConnection {
 }
 
 #[get("/api/<id>")]
-fn api(id: u64) -> String {
-    format!("Hello, {}!", id)
+fn api(mut connection: RedisConnection, id: u64) -> String {
+    let cached_value: String = connection.get(id.to_string()).unwrap_or_else(|_| {
+        let value = format!("Hello, {}!", id);
+        let _: () = connection.set(id.to_string(), value.clone()).unwrap();
+        value
+    });
+    cached_value
 }
 
 #[launch]

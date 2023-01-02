@@ -14,12 +14,12 @@ jobs:
       - name: Check out the exercise
         uses: actions/checkout@v3
         with:
-          repository: thecjharries/dso-dojo-slow-postgres
-          path: ./dso-dojo-slow-postgres
+          repository: thecjharries/dso-dojo-slow-server
+          path: ./dso-dojo-slow-server
 
       - name: Build dependencies
         run: make docker-build
-        working-directory: ./dso-dojo-slow-postgres
+        working-directory: ./dso-dojo-slow-server
 
       - name: Check out code
         uses: actions/checkout@v3

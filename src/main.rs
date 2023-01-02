@@ -6,6 +6,7 @@ use rocket::outcome::try_outcome;
 use rocket::request::{self, FromRequest, Request};
 use rocket::{async_trait, build, get, launch, routes, State};
 use std::env::var;
+use std::ops::Deref;
 
 lazy_static! {
     static ref REDIS_CONNECTION_STRING: String =
@@ -30,6 +31,14 @@ impl<'r> FromRequest<'r> for RedisConnection {
             Ok(conn) => request::Outcome::Success(RedisConnection(conn)),
             Err(_) => request::Outcome::Failure((Status::ServiceUnavailable, ())),
         }
+    }
+}
+
+impl Deref for RedisConnection {
+    type Target = PooledConnection<RedisConnectionManager>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

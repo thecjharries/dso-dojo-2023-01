@@ -50,7 +50,7 @@ impl DerefMut for RedisConnection {
 }
 
 #[get("/api/<id>")]
-fn api(mut connection: RedisConnection, id: u64) -> String {
+async fn api(mut connection: RedisConnection, id: u64) -> String {
     let cached_value: String = connection.get(id.to_string()).unwrap_or_else(|_| {
         let value = format!("Hello, {}!", id);
         let _: () = connection.set(id.to_string(), value.clone()).unwrap();

@@ -11,6 +11,16 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      - name: Check out the exercise
+        uses: actions/checkout@v3
+        with:
+          repository: thecjharries/dso-dojo-slow-postgres
+          path: ./dso-dojo-slow-postgres
+
+      - name: Build dependencies
+        run: make docker-build
+        working-directory: ./dso-dojo-slow-postgres
+
       - name: Check out code
         uses: actions/checkout@v3
 
@@ -23,12 +33,12 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Start redis
-        run: make redis
+      - name: Start the dev stack
+        run: make dev
 
       - name: Test the server
         run: cargo test --verbose
 
-      - name: Stop redis
+      - name: Stop the dev stack
         if: always()
-        run: docker stop redis
+        run: make dev

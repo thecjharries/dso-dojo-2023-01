@@ -18,8 +18,8 @@ cache-server:
 .PHONY: dependencies
 dependencies: nginx cache-server
 
-.PHONY: stack
-stack: dependencies
+.PHONY: solution
+solution: dependencies
 	$(MAKE) docker-compose FILE=./solution-stack.yaml
 
 .PHONY: docker-compose

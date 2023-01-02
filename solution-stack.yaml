@@ -1,5 +1,12 @@
 version: "3.1"
 services:
+  reverseproxy:
+    image: thecjharries/dso-dojo-2023-01-reverseproxy
+    ports:
+      - "80:80"
+    networks:
+      network:
+        ipv4_address: 10.0.0.1
   postgres:
     image: postgres
     command: postgres -c 'max_connections=20000'
@@ -15,19 +22,31 @@ services:
     image: thecjharries/dso_dojo_slow_postgres
     environment:
       ROCKET_DATABASES: '{postgres={url="postgres://postgres:plaintext@10.0.0.2:5432/postgres"}}'
+      ROCKET_PORT: 8000
       API_WAIT_SECONDS: 0
     ports:
       - "8000:8000"
     networks:
       network:
         ipv4_address: 10.0.0.3
-  reverseproxy:
-    image: thecjharries/dso-dojo-2023-01-reverseproxy
+  cacheserver:
+    image: thecjharries/dso-dojo-2023-01-cacheserver
+    environment:
+      ROCKET_PORT: 8001
+      REDIS_CONNECTION_STRING: "redis://10.0.0.5:6379"
     ports:
-      - "80:80"
+      - "8001:8001"
     networks:
       network:
         ipv4_address: 10.0.0.4
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      network:
+        ipv4_address: 10.0.0.5
 
 networks:
   network:
@@ -35,4 +54,4 @@ networks:
     ipam:
       config:
         - subnet: 10.0.0.0/24
-          gateway: 10.0.0.1
+          gateway: 10.0.0.254

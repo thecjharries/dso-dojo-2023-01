@@ -48,14 +48,14 @@ impl DerefMut for RedisConnection {
     }
 }
 
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+#[get("/api/<id>")]
+fn api(id: u64) -> String {
+    format!("Hello, {}!", id)
 }
 
 #[launch]
 fn rocket() -> _ {
-    build().mount("/", routes![index]).manage(redis_pool())
+    build().mount("/", routes![api]).manage(redis_pool())
 }
 
 #[cfg(test)]
@@ -72,10 +72,10 @@ mod tests {
     }
 
     #[test]
-    fn test_index() {
+    fn test_api() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response: LocalResponse = client.get("/").dispatch();
+        let response: LocalResponse = client.get("/api/10").dispatch();
         assert_eq!(response.status(), rocket::http::Status::Ok);
-        assert_eq!(response.into_string(), Some("Hello, world!".into()));
+        assert_eq!(response.into_string(), Some("Hello, 10!".into()));
     }
 }

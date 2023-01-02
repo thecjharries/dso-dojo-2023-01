@@ -3,9 +3,9 @@ FILE=solution-stack.yaml
 .PHONY: all
 all:
 
-.PHONY: redis
-redis:
-	docker run --rm --detach --publish 6379:6379 --name redis redis
+.PHONY: dev
+dev:
+	$(MAKE) docker-compose FILE=./dev-stack.yaml
 
 .PHONY: nginx
 nginx:
@@ -20,6 +20,10 @@ dependencies: nginx cache-server
 
 .PHONY: stack
 stack: dependencies
+	$(MAKE) docker-compose FILE=./solution-stack.yaml
+
+.PHONY: docker-compose
+docker-compose:
 	if docker-compose ls | grep -q $(FILE); then \
 		docker-compose --file $(FILE) down; \
 	else \

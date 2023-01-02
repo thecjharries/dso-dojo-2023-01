@@ -4,6 +4,9 @@ services:
     image: thecjharries/dso-dojo-2023-01-reverseproxy
     ports:
       - "80:80"
+    depends_on:
+      - dso_dojo_slow_postgres
+      - cacheserver
     networks:
       network:
         ipv4_address: 10.0.0.1
@@ -23,9 +26,11 @@ services:
     environment:
       ROCKET_DATABASES: '{postgres={url="postgres://postgres:plaintext@10.0.0.2:5432/postgres"}}'
       ROCKET_PORT: 8000
-      API_WAIT_SECONDS: 0
+      API_WAIT_SECONDS: 10
     ports:
       - "8000:8000"
+    depends_on:
+      - postgres
     networks:
       network:
         ipv4_address: 10.0.0.3
@@ -34,8 +39,13 @@ services:
     environment:
       ROCKET_PORT: 8001
       REDIS_CONNECTION_STRING: "redis://10.0.0.5:6379"
+      API_ROOT: "http://10.0.0.3:8000"
     ports:
       - "8001:8001"
+    depends_on:
+      - dso_dojo_slow_postgres
+      - redis
+    restart: always
     networks:
       network:
         ipv4_address: 10.0.0.4

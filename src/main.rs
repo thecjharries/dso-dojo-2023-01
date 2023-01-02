@@ -1,16 +1,21 @@
 use lazy_static::lazy_static;
 use r2d2_redis::r2d2::{Pool, PooledConnection};
+use r2d2_redis::redis::Commands;
 use r2d2_redis::RedisConnectionManager;
+use reqwest;
 use rocket::http::Status;
 use rocket::outcome::try_outcome;
 use rocket::request::{self, FromRequest, Request};
+use rocket::serde::json::Json;
 use rocket::{async_trait, build, get, launch, routes, State};
+use serde::{Deserialize, Serialize};
 use std::env::var;
 use std::ops::{Deref, DerefMut};
 
 lazy_static! {
     static ref REDIS_CONNECTION_STRING: String =
         var("REDIS_CONNECTION_STRING").unwrap_or("redis://localhost:6379".to_string());
+    static ref API_ROOT: String = var("API_ROOT").unwrap_or("http://localhost:8001".to_string());
 }
 
 fn redis_pool() -> Pool<RedisConnectionManager> {
@@ -48,9 +53,29 @@ impl DerefMut for RedisConnection {
     }
 }
 
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+struct ApiResponse {
+    id: u64,
+    token: String,
+}
+
 #[get("/api/<id>")]
-fn api(id: u64) -> String {
-    format!("Hello, {}!", id)
+async fn api(mut connection: RedisConnection, id: u64) -> Json<ApiResponse> {
+    match connection.get(id.to_string()) {
+        Ok(token) => Json(ApiResponse { id, token }),
+        Err(_) => {
+            let response: ApiResponse = reqwest::get(format!("{}/api/{}", API_ROOT.as_str(), id))
+                .await
+                .unwrap()
+                .json::<ApiResponse>()
+                .await
+                .unwrap();
+            let _: () = connection
+                .set(id.to_string(), response.token.clone())
+                .unwrap();
+            Json(response.clone())
+        }
+    }
 }
 
 #[launch]
@@ -62,7 +87,9 @@ fn rocket() -> _ {
 mod tests {
     use super::*;
     use r2d2_redis::redis;
+    use r2d2_redis::redis::Commands;
     use rocket::local::blocking::{Client, LocalResponse};
+    use std::time::{Duration, Instant};
 
     #[test]
     fn test_redis_connection() {
@@ -73,9 +100,35 @@ mod tests {
 
     #[test]
     fn test_api() {
-        let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response: LocalResponse = client.get("/api/10").dispatch();
-        assert_eq!(response.status(), rocket::http::Status::Ok);
-        assert_eq!(response.into_string(), Some("Hello, 10!".into()));
+        let pool = redis_pool();
+        let mut conn = pool.get().unwrap();
+        match conn.del::<String, ()>(10.to_string()) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+        assert!(conn.get::<String, String>(10.to_string()).is_err());
+        let client = Client::tracked(rocket()).unwrap();
+        let slow_start = Instant::now();
+        let slow_response: LocalResponse = client.get("/api/10").dispatch();
+        let slow_end: Duration = slow_start.elapsed();
+        assert_eq!(slow_response.status(), Status::Ok);
+        assert!(slow_end.as_millis() > 5000);
+        assert_eq!(
+            slow_response.into_json::<ApiResponse>().unwrap(),
+            ApiResponse {
+                id: 10,
+                token: "hjupifwjnzholhbcehxlmdgaayihhjfbsnkmaecvmumzcmyfqueruzayamxhpflo"
+                    .to_string()
+            }
+        );
+        assert_eq!(
+            conn.get::<String, String>(10.to_string()).unwrap(),
+            "hjupifwjnzholhbcehxlmdgaayihhjfbsnkmaecvmumzcmyfqueruzayamxhpflo".to_string()
+        );
+        let fast_start = Instant::now();
+        let timed_response: LocalResponse = client.get("/api/10").dispatch();
+        let end: Duration = fast_start.elapsed();
+        assert_eq!(timed_response.status(), Status::Ok);
+        assert!(end.as_millis() < 100);
     }
 }

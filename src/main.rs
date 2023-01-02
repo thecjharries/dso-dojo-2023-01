@@ -15,7 +15,7 @@ use std::ops::{Deref, DerefMut};
 lazy_static! {
     static ref REDIS_CONNECTION_STRING: String =
         var("REDIS_CONNECTION_STRING").unwrap_or("redis://localhost:6379".to_string());
-    static ref API_URL: String = var("API_URL").unwrap_or("http://localhost:8000/api/".to_string());
+    static ref API_ROOT: String = var("API_ROOT").unwrap_or("http://localhost:8000".to_string());
 }
 
 fn redis_pool() -> Pool<RedisConnectionManager> {
@@ -64,7 +64,7 @@ async fn api(mut connection: RedisConnection, id: u64) -> Json<ApiResponse> {
     match connection.get(id.to_string()) {
         Ok(token) => Json(ApiResponse { id, token }),
         Err(_) => {
-            let response: ApiResponse = reqwest::get(format!("{}{}", API_URL.as_str(), id))
+            let response: ApiResponse = reqwest::get(format!("{}/api/{}", API_ROOT.as_str(), id))
                 .await
                 .unwrap()
                 .json::<ApiResponse>()

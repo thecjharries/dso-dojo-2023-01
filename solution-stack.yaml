@@ -1,0 +1,38 @@
+version: "3.1"
+services:
+  postgres:
+    image: postgres
+    command: postgres -c 'max_connections=20000'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: plaintext
+    ports:
+      - "5432:5432"
+    networks:
+      network:
+        ipv4_address: 10.0.0.2
+  dso_dojo_slow_postgres:
+    image: thecjharries/dso_dojo_slow_postgres
+    environment:
+      ROCKET_DATABASES: '{postgres={url="postgres://postgres:plaintext@10.0.0.2:5432/postgres"}}'
+      API_WAIT_SECONDS: 0
+    ports:
+      - "8000:8000"
+    networks:
+      network:
+        ipv4_address: 10.0.0.3
+  reverseproxy:
+    image: thecjharries/dso-dojo-2023-01-reverseproxy
+    ports:
+      - "80:80"
+    networks:
+      network:
+        ipv4_address: 10.0.0.4
+
+networks:
+  network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/24
+          gateway: 10.0.0.1

@@ -6,7 +6,7 @@ use rocket::outcome::try_outcome;
 use rocket::request::{self, FromRequest, Request};
 use rocket::{async_trait, build, get, launch, routes, State};
 use std::env::var;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 lazy_static! {
     static ref REDIS_CONNECTION_STRING: String =
@@ -42,6 +42,12 @@ impl Deref for RedisConnection {
     }
 }
 
+impl DerefMut for RedisConnection {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
@@ -55,7 +61,15 @@ fn rocket() -> _ {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use r2d2_redis::redis;
     use rocket::local::blocking::{Client, LocalResponse};
+
+    #[test]
+    fn test_redis_connection() {
+        let pool = redis_pool();
+        let mut conn = pool.get().unwrap();
+        let _: () = redis::cmd("PING").query(conn.deref_mut()).unwrap();
+    }
 
     #[test]
     fn test_index() {

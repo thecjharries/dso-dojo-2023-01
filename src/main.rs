@@ -51,3 +51,17 @@ fn index() -> &'static str {
 fn rocket() -> _ {
     build().mount("/", routes![index]).manage(redis_pool())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rocket::local::blocking::{Client, LocalResponse};
+
+    #[test]
+    fn test_index() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response: LocalResponse = client.get("/").dispatch();
+        assert_eq!(response.status(), rocket::http::Status::Ok);
+        assert_eq!(response.into_string(), Some("Hello, world!".into()));
+    }
+}

@@ -34,6 +34,7 @@ services:
     environment:
       ROCKET_PORT: 8001
       REDIS_CONNECTION_STRING: "redis://10.0.0.5:6379"
+      API_ROOT: "http://10.0.0.3:8000"
     ports:
       - "8001:8001"
     networks:

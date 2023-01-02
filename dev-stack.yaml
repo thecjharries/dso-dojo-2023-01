@@ -12,7 +12,7 @@ services:
     environment:
       ROCKET_DATABASES: '{postgres={url="postgres://postgres:plaintext@localhost:5432/postgres"}}'
       ROCKET_PORT: 8001
-      API_WAIT_SECONDS: 0
+      API_WAIT_SECONDS: 10
     network_mode: host
   redis:
     image: redis

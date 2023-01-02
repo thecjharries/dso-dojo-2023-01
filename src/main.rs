@@ -87,12 +87,48 @@ fn rocket() -> _ {
 mod tests {
     use super::*;
     use r2d2_redis::redis;
+    use r2d2_redis::redis::Commands;
     use rocket::local::blocking::{Client, LocalResponse};
+    use std::time::{Duration, Instant};
 
     #[test]
     fn test_redis_connection() {
         let pool = redis_pool();
         let mut conn = pool.get().unwrap();
         let _: () = redis::cmd("PING").query(conn.deref_mut()).unwrap();
+    }
+
+    #[test]
+    fn test_api() {
+        let pool = redis_pool();
+        let mut conn = pool.get().unwrap();
+        match conn.del::<String, ()>(10.to_string()) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+        assert!(conn.get::<String, String>(10.to_string()).is_err());
+        let client = Client::tracked(rocket()).unwrap();
+        let slow_start = Instant::now();
+        let slow_response: LocalResponse = client.get("/api/10").dispatch();
+        let slow_end: Duration = slow_start.elapsed();
+        assert_eq!(slow_response.status(), Status::Ok);
+        assert!(slow_end.as_millis() > 5000);
+        assert_eq!(
+            slow_response.into_json::<ApiResponse>().unwrap(),
+            ApiResponse {
+                id: 10,
+                token: "hjupifwjnzholhbcehxlmdgaayihhjfbsnkmaecvmumzcmyfqueruzayamxhpflo"
+                    .to_string()
+            }
+        );
+        assert_eq!(
+            conn.get::<String, String>(10.to_string()).unwrap(),
+            "hjupifwjnzholhbcehxlmdgaayihhjfbsnkmaecvmumzcmyfqueruzayamxhpflo".to_string()
+        );
+        let fast_start = Instant::now();
+        let timed_response: LocalResponse = client.get("/api/10").dispatch();
+        let end: Duration = fast_start.elapsed();
+        assert_eq!(timed_response.status(), Status::Ok);
+        assert!(end.as_millis() < 100);
     }
 }

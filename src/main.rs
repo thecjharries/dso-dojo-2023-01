@@ -2,9 +2,11 @@ use lazy_static::lazy_static;
 use r2d2_redis::r2d2::{Pool, PooledConnection};
 use r2d2_redis::redis::Commands;
 use r2d2_redis::RedisConnectionManager;
+use reqwest;
 use rocket::http::Status;
 use rocket::outcome::try_outcome;
 use rocket::request::{self, FromRequest, Request};
+use rocket::serde::json::Json;
 use rocket::{async_trait, build, get, launch, routes, State};
 use serde::{Deserialize, Serialize};
 use std::env::var;
@@ -50,20 +52,29 @@ impl DerefMut for RedisConnection {
     }
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 struct ApiResponse {
     id: u64,
     token: String,
 }
 
 #[get("/api/<id>")]
-async fn api(mut connection: RedisConnection, id: u64) -> String {
-    let cached_value: String = connection.get(id.to_string()).unwrap_or_else(|_| {
-        let value = format!("Hello, {}!", id);
-        let _: () = connection.set(id.to_string(), value.clone()).unwrap();
-        value
-    });
-    cached_value
+async fn api(mut connection: RedisConnection, id: u64) -> Json<ApiResponse> {
+    match connection.get(id.to_string()) {
+        Ok(token) => Json(ApiResponse { id, token }),
+        Err(_) => {
+            let response: ApiResponse = reqwest::get(format!("localhost:8000/api/{}", id))
+                .await
+                .unwrap()
+                .json::<ApiResponse>()
+                .await
+                .unwrap();
+            let _: () = connection
+                .set(id.to_string(), response.token.clone())
+                .unwrap();
+            Json(response.clone())
+        }
+    }
 }
 
 #[launch]
